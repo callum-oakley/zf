@@ -2,6 +2,8 @@
 name = "cook"
 version = "0.1.0"
 edition = "2021"
+description = "a task runner"
+license = "MIT"
 
 [dependencies]
 anyhow = "1.0.86"
