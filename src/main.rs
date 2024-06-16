@@ -2,7 +2,6 @@ use std::{env, fs, iter, path::Path, process::Command};
 
 use anyhow::bail;
 use regex::{Captures, Regex};
-use termcolor::{ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 #[derive(Debug)]
 struct Recipe<'a> {
@@ -27,18 +26,11 @@ impl<'a> Recipe<'a> {
         }
     }
 
-    fn print(&self) -> anyhow::Result<()> {
+    fn print(&self) {
         let indentation = self.body.chars().take_while(|&c| c == ' ').count();
-
-        let mut stdout = StandardStream::stdout(ColorChoice::Auto);
-        stdout.set_color(ColorSpec::new().set_bold(true))?;
         for line in self.body.lines() {
-            println!("{}", line.split_at(indentation).1);
+            eprintln!("> {}", line.split_at(indentation).1);
         }
-        stdout.reset()?;
-        println!();
-
-        Ok(())
     }
 
     fn run(&self, values: &[String]) -> anyhow::Result<()> {
@@ -83,7 +75,7 @@ fn main() -> anyhow::Result<()> {
     let args = env::args().collect::<Vec<_>>();
     let args = &args[1..];
     if args.is_empty() {
-        print!("{cookbook}");
+        eprint!("{cookbook}");
         return Ok(());
     }
 
@@ -98,7 +90,6 @@ fn main() -> anyhow::Result<()> {
         bail!("no recipes with name {name} and {arity} arguments");
     };
 
-    recipe.print()?;
-
+    recipe.print();
     recipe.run(values)
 }
