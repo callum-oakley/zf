@@ -1,4 +1,4 @@
-use std::{env, fs, iter, process::Command};
+use std::{env, fs, iter, path::Path, process::Command};
 
 use anyhow::bail;
 use regex::{Captures, Regex};
@@ -44,6 +44,10 @@ fn parse(cookbook: &str) -> anyhow::Result<Vec<Recipe>> {
 }
 
 fn main() -> anyhow::Result<()> {
+    if !Path::new("cookbook").try_exists()? {
+        bail!("no cookbook in current directory");
+    };
+
     let cookbook = fs::read_to_string("cookbook")?;
     let recipes = parse(&cookbook)?;
 
