@@ -26,6 +26,35 @@ impl<'a> Recipe<'a> {
             body: method,
         }
     }
+
+    fn print(&self) -> anyhow::Result<()> {
+        let indentation = self.body.chars().take_while(|&c| c == ' ').count();
+
+        let mut stdout = StandardStream::stdout(ColorChoice::Auto);
+        stdout.set_color(ColorSpec::new().set_bold(true))?;
+        for line in self.body.lines() {
+            println!("{}", line.split_at(indentation).1);
+        }
+        stdout.reset()?;
+        println!();
+
+        Ok(())
+    }
+
+    fn run(&self, values: &[String]) -> anyhow::Result<()> {
+        let mut cmd = Command::new("/bin/sh");
+        cmd.args(["-c", self.body]);
+        for (ingredient, value) in iter::zip(&self.arguments, values) {
+            cmd.env(ingredient, value);
+        }
+
+        let status = cmd.status()?;
+        if !status.success() {
+            bail!(status);
+        }
+
+        Ok(())
+    }
 }
 
 fn parse(cookbook: &str) -> anyhow::Result<Vec<Recipe>> {
@@ -69,26 +98,7 @@ fn main() -> anyhow::Result<()> {
         bail!("no recipes with name {name} and {arity} arguments");
     };
 
-    let mut stdout = StandardStream::stdout(ColorChoice::Auto);
+    recipe.print()?;
 
-    let indentation = recipe.body.chars().take_while(|&c| c == ' ').count();
-    stdout.set_color(ColorSpec::new().set_bold(true))?;
-    for line in recipe.body.lines() {
-        println!("{}", line.split_at(indentation).1);
-    }
-    stdout.reset()?;
-    println!();
-
-    let mut cmd = Command::new("/bin/sh");
-    cmd.args(["-c", recipe.body]);
-    for (ingredient, value) in iter::zip(&recipe.arguments, values) {
-        cmd.env(ingredient, value);
-    }
-
-    let status = cmd.status()?;
-    if !status.success() {
-        bail!(status);
-    }
-
-    Ok(())
+    recipe.run(values)
 }
