@@ -8,7 +8,7 @@ use termcolor::{ColorChoice, ColorSpec, StandardStream, WriteColor};
 struct Recipe<'a> {
     name: &'a str,
     arguments: Vec<&'a str>,
-    method: &'a str,
+    body: &'a str,
 }
 
 impl<'a> Recipe<'a> {
@@ -23,7 +23,7 @@ impl<'a> Recipe<'a> {
         Recipe {
             name,
             arguments,
-            method,
+            body: method,
         }
     }
 }
@@ -67,16 +67,16 @@ fn main() -> anyhow::Result<()> {
 
     let mut stdout = StandardStream::stdout(ColorChoice::Auto);
 
-    let indentation = recipe.method.chars().take_while(|&c| c == ' ').count();
+    let indentation = recipe.body.chars().take_while(|&c| c == ' ').count();
     stdout.set_color(ColorSpec::new().set_bold(true))?;
-    for line in recipe.method.lines() {
+    for line in recipe.body.lines() {
         println!("{}", line.split_at(indentation).1);
     }
     stdout.reset()?;
     println!();
 
     let mut cmd = Command::new("/bin/sh");
-    cmd.args(["-c", recipe.method]);
+    cmd.args(["-c", recipe.body]);
     for (ingredient, value) in iter::zip(&recipe.arguments, values) {
         cmd.env(ingredient, value);
     }
