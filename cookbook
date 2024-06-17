@@ -14,3 +14,10 @@ hello person
 
 hello
     zf hello world
+
+multi-line
+    echo foo
+
+    for i in {0..5}; do
+        echo $i
+    done

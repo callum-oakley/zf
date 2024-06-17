@@ -15,7 +15,7 @@ struct Recipe<'a> {
 impl<'a> Recipe<'a> {
     fn from(captures: &Captures<'a>) -> Self {
         let signature = captures.get(1).unwrap().as_str();
-        let method = captures.get(2).unwrap().as_str();
+        let body = captures.get(2).unwrap().as_str().trim_end();
 
         let mut words = signature.split_whitespace();
         let name = words.next().unwrap();
@@ -24,7 +24,7 @@ impl<'a> Recipe<'a> {
         Recipe {
             name,
             parameters: arguments,
-            body: method,
+            body,
         }
     }
 
@@ -47,14 +47,14 @@ impl<'a> Recipe<'a> {
     fn print(&self) {
         let indentation = self.body.chars().take_while(|&c| c == ' ').count();
         for line in self.body.lines() {
-            eprintln!("> {}", line.split_at(indentation).1);
+            eprintln!("> {}", line.split_at(indentation.min(line.len())).1);
         }
     }
 }
 
 fn parse(cookbook: &str) -> anyhow::Result<Vec<Recipe>> {
     let comment = r"#.*\n| *\n";
-    let recipe_re = Regex::new(&format!(r"(?:{comment})*([^# ].*\n)((?: .*\n)*)"))?;
+    let recipe_re = Regex::new(&format!(r"(?:{comment})*([^# ].*\n)((?: .*\n|\n)*)"))?;
     let cookbook_re = Regex::new(&format!(r"^({recipe_re})*({comment})*$"))?;
 
     if !cookbook_re.is_match(cookbook) {
