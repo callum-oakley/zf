@@ -6,7 +6,7 @@ use regex::{Captures, Regex};
 #[derive(Debug)]
 struct Recipe<'a> {
     name: &'a str,
-    arguments: Vec<&'a str>,
+    parameters: Vec<&'a str>,
     body: &'a str,
 }
 
@@ -21,17 +21,18 @@ impl<'a> Recipe<'a> {
 
         Recipe {
             name,
-            arguments,
+            parameters: arguments,
             body: method,
         }
     }
 
-    fn run(&self, values: &[String]) -> anyhow::Result<()> {
+    fn run(&self, arguments: &[String]) -> anyhow::Result<()> {
         let mut cmd = Command::new("/bin/sh");
-        cmd.args(["-xc", self.body]);
-        for (ingredient, value) in iter::zip(&self.arguments, values) {
-            cmd.env(ingredient, value);
+        cmd.args(["-xc", self.body, self.name]);
+        for (parameter, argument) in iter::zip(&self.parameters, arguments) {
+            cmd.env(parameter, argument);
         }
+        cmd.args(&arguments[self.parameters.len()..]);
 
         let status = cmd.status()?;
         if !status.success() {
@@ -73,15 +74,15 @@ fn main() -> anyhow::Result<()> {
     }
 
     let name = &args[0];
-    let values = &args[1..];
-    let arity = values.len();
+    let arguments = &args[1..];
+    let arity = arguments.len();
 
     let Some(recipe) = recipes
         .iter()
-        .find(|r| r.name == name && r.arguments.len() == arity)
+        .find(|r| r.name == name && r.parameters.len() <= arity)
     else {
-        bail!("no recipes with name {name} and {arity} arguments");
+        bail!("no recipes with name {name} and {arity} parameters");
     };
 
-    recipe.run(values)
+    recipe.run(arguments)
 }

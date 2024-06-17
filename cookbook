@@ -6,8 +6,8 @@ publish
 
 # some silly recipes for testing...
 
-hello
-    zf hello world
-
 hello person
     echo hello "${person}"
+
+hello
+    zf hello world
