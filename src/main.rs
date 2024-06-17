@@ -27,8 +27,8 @@ impl<'a> Recipe<'a> {
     }
 
     fn run(&self, arguments: &[String]) -> anyhow::Result<()> {
-        let mut cmd = Command::new("/bin/sh");
-        cmd.args(["-xc", self.body, self.name]);
+        let mut cmd = Command::new(env::var("SHELL")?);
+        cmd.args(["-c", self.body, self.name]);
         for (parameter, argument) in iter::zip(&self.parameters, arguments) {
             cmd.env(parameter, argument);
         }
@@ -40,6 +40,13 @@ impl<'a> Recipe<'a> {
         }
 
         Ok(())
+    }
+
+    fn print(&self) {
+        let indentation = self.body.chars().take_while(|&c| c == ' ').count();
+        for line in self.body.lines() {
+            eprintln!("> {}", line.split_at(indentation).1);
+        }
     }
 }
 
@@ -84,5 +91,6 @@ fn main() -> anyhow::Result<()> {
         bail!("no recipes with name {name} and {arity} parameters");
     };
 
+    recipe.print();
     recipe.run(arguments)
 }
