@@ -1,3 +1,5 @@
+#![warn(clippy::pedantic)]
+
 use std::{env, fs, iter, path::Path, process::Command};
 
 use anyhow::bail;
@@ -11,7 +13,7 @@ struct Recipe<'a> {
 }
 
 impl<'a> Recipe<'a> {
-    fn from(captures: Captures<'a>) -> Self {
+    fn from(captures: &Captures<'a>) -> Self {
         let signature = captures.get(1).unwrap().as_str();
         let method = captures.get(2).unwrap().as_str();
 
@@ -61,7 +63,7 @@ fn parse(cookbook: &str) -> anyhow::Result<Vec<Recipe>> {
 
     Ok(recipe_re
         .captures_iter(cookbook)
-        .map(Recipe::from)
+        .map(|c| Recipe::from(&c))
         .collect())
 }
 
