@@ -5,14 +5,13 @@ use std::{env, fs, iter, path::Path, process::Command};
 use anyhow::bail;
 use regex::{Captures, Regex};
 
-#[derive(Debug)]
-struct Recipe<'a> {
+struct Script<'a> {
     name: &'a str,
     parameters: Vec<&'a str>,
     body: &'a str,
 }
 
-impl<'a> Recipe<'a> {
+impl<'a> Script<'a> {
     fn from(captures: &Captures<'a>) -> Self {
         let signature = captures.get(1).unwrap().as_str();
         let body = captures.get(2).unwrap().as_str().trim_end();
@@ -21,7 +20,7 @@ impl<'a> Recipe<'a> {
         let name = words.next().unwrap();
         let arguments = words.collect::<Vec<_>>();
 
-        Recipe {
+        Script {
             name,
             parameters: arguments,
             body,
@@ -52,33 +51,33 @@ impl<'a> Recipe<'a> {
     }
 }
 
-fn parse(cookbook: &str) -> anyhow::Result<Vec<Recipe>> {
+fn parse(scriptfile: &str) -> anyhow::Result<Vec<Script>> {
     let comment = r"#.*\n| *\n";
-    let recipe_re = Regex::new(&format!(r"(?:{comment})*([^# ].*\n)((?: .*\n|\n)*)"))?;
-    let cookbook_re = Regex::new(&format!(r"^({recipe_re})*({comment})*$"))?;
+    let script_re = Regex::new(&format!(r"(?:{comment})*([^# ].*\n)((?: .*\n|\n)*)"))?;
+    let scriptfile_re = Regex::new(&format!(r"^({script_re})*({comment})*$"))?;
 
-    if !cookbook_re.is_match(cookbook) {
-        bail!("malformed cookbook");
+    if !scriptfile_re.is_match(scriptfile) {
+        bail!("malformed scriptfile");
     }
 
-    Ok(recipe_re
-        .captures_iter(cookbook)
-        .map(|c| Recipe::from(&c))
+    Ok(script_re
+        .captures_iter(scriptfile)
+        .map(|c| Script::from(&c))
         .collect())
 }
 
 fn main() -> anyhow::Result<()> {
-    if !Path::new("cookbook").try_exists()? {
-        bail!("no cookbook in current directory");
+    if !Path::new("scriptfile").try_exists()? {
+        bail!("no scriptfile in current directory");
     };
 
-    let cookbook = fs::read_to_string("cookbook")?;
-    let recipes = parse(&cookbook)?;
+    let scriptfile = fs::read_to_string("scriptfile")?;
+    let scripts = parse(&scriptfile)?;
 
     let args = env::args().collect::<Vec<_>>();
     let args = &args[1..];
     if args.is_empty() {
-        eprint!("{cookbook}");
+        eprint!("{scriptfile}");
         return Ok(());
     }
 
@@ -86,13 +85,13 @@ fn main() -> anyhow::Result<()> {
     let arguments = &args[1..];
     let arity = arguments.len();
 
-    let Some(recipe) = recipes
+    let Some(script) = scripts
         .iter()
         .find(|r| r.name == name && r.parameters.len() <= arity)
     else {
-        bail!("no recipes with name {name} and {arity} parameters");
+        bail!("no scripts with name {name} and {arity} parameters");
     };
 
-    recipe.print();
-    recipe.run(arguments)
+    script.print();
+    script.run(arguments)
 }
