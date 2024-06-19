@@ -2,7 +2,7 @@
 name = "zf"
 version = "0.1.8"
 edition = "2021"
-description = "a task runner"
+description = "a script runner"
 license = "MIT"
 repository = "https://github.com/callum-oakley/zf"
 

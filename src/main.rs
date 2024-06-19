@@ -8,6 +8,7 @@ use regex::{Captures, Regex};
 struct Script<'a> {
     name: &'a str,
     parameters: Vec<&'a str>,
+    rest: bool,
     body: &'a str,
 }
 
@@ -18,11 +19,18 @@ impl<'a> Script<'a> {
 
         let mut words = signature.split_whitespace();
         let name = words.next().unwrap();
-        let arguments = words.collect::<Vec<_>>();
+        let mut parameters = words.collect::<Vec<_>>();
+        let mut rest = false;
+
+        if parameters.last() == Some(&"...") {
+            parameters.pop();
+            rest = true;
+        }
 
         Script {
             name,
-            parameters: arguments,
+            parameters,
+            rest,
             body,
         }
     }
@@ -83,13 +91,17 @@ fn main() -> anyhow::Result<()> {
 
     let name = &args[0];
     let arguments = &args[1..];
-    let arity = arguments.len();
 
-    let Some(script) = scripts
-        .iter()
-        .find(|r| r.name == name && r.parameters.len() <= arity)
-    else {
-        bail!("no scripts with name {name} and {arity} parameters");
+    let Some(script) = scripts.iter().find(|r| {
+        r.name == name
+            && (r.rest && r.parameters.len() <= arguments.len()
+                || r.parameters.len() == arguments.len())
+    }) else {
+        bail!(
+            "script not found: {} ({} parameters)",
+            name,
+            arguments.len(),
+        );
     };
 
     script.print();
